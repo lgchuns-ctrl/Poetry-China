@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <div v-if="selectedAuthor" class="author-content">
+    <div v-show="selectedAuthor" class="author-content">
       <!-- 诗人信息 -->
       <div class="author-info">
         <h3 class="author-title">{{ selectedAuthor }}</h3>
@@ -107,7 +107,7 @@
       </div>
     </div>
 
-    <div v-else class="author-empty">
+    <div v-if="!selectedAuthor" class="author-empty">
       <p>请选择一位诗人，查看他的诗中中国</p>
     </div>
   </div>
