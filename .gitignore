@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+.npm-cache/
+dist/
+*.local
+npm-debug.log*
+
+# 本项目的跨平台依赖补丁与缓存
+web/wasm-node-tmp/
+*.tgz
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# 本地敏感信息
+*.env
+.env.*
+
+# 原始数据下载缓存
+data/raw/.downloads/

@@ -1,0 +1,32 @@
+[
+  {
+    "source_id": "src_001",
+    "source_title": "chinese-poetry GitHub 仓库 - 全唐诗",
+    "source_url": "https://github.com/chinese-poetry/chinese-poetry/tree/master/全唐诗",
+    "publisher": "JackeyGao / chinese-poetry",
+    "source_type": "GitHub公开数据集",
+    "license": "MIT License",
+    "accessed_at": "2026-08-07",
+    "notes": "清康熙四十四年彭定求等编校《全唐诗》，约55000首唐诗。数据以JSON格式分发，繁体存储。"
+  },
+  {
+    "source_id": "src_002",
+    "source_title": "chinese-poetry GitHub 仓库 - 宋词",
+    "source_url": "https://github.com/chinese-poetry/chinese-poetry/tree/master/宋词",
+    "publisher": "JackeyGao / chinese-poetry",
+    "source_type": "GitHub公开数据集",
+    "license": "MIT License",
+    "accessed_at": "2026-08-07",
+    "notes": "两宋时期1564位词人，21050首词。数据以JSON格式分发，繁体存储。"
+  },
+  {
+    "source_id": "src_003",
+    "source_title": "chinese-poetry GitHub 仓库 - 作者信息",
+    "source_url": "https://github.com/chinese-poetry/chinese-poetry/blob/master/全唐诗/authors.tang.json",
+    "publisher": "JackeyGao / chinese-poetry",
+    "source_type": "GitHub公开数据集",
+    "license": "MIT License",
+    "accessed_at": "2026-08-07",
+    "notes": "唐诗作者3675位，宋词作者约1500位。含作者简介（繁体）。"
+  }
+]

@@ -1,0 +1,109 @@
+:root {
+  /* 宣纸/墨色主题 */
+  --color-bg: #f5f1e8;
+  --color-bg-alt: #efe8d9;
+  --color-card: #faf6ed;
+  --color-ink: #1a1a1a;
+  --color-ink-light: #4a4a4a;
+  --color-ink-muted: #8a8a8a;
+  --color-accent: #8b3a3a;
+  --color-accent-light: #c66;
+  --color-gold: #b8860b;
+  --color-tang: #8b3a3a;
+  --color-song: #2e5c6e;
+  --color-border: #d4c9a8;
+  --color-border-light: #e0d8c5;
+
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-sans: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  --shadow-sm: 0 1px 3px rgba(60, 50, 30, 0.08);
+  --shadow-md: 0 4px 12px rgba(60, 50, 30, 0.12);
+  --shadow-lg: 0 8px 24px rgba(60, 50, 30, 0.15);
+
+  --radius: 4px;
+  --radius-lg: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-serif);
+  color: var(--color-ink);
+  background: var(--color-bg);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--color-accent-light);
+}
+
+button {
+  font-family: var(--font-serif);
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.3s;
+}
+
+.text-tang { color: var(--color-tang); }
+.text-song { color: var(--color-song); }
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-alt);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
+
+/* 过渡动画 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: all 0.4s ease;
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  :root {
+    --font-serif: 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+  }
+}
