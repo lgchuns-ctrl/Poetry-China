@@ -27,7 +27,7 @@
     <div class="search-results" v-if="results.length > 0">
       <p class="result-count">找到 {{ results.length }} 条结果</p>
       <div class="result-list">
-        <div v-for="r in results" :key="r.work_id" class="result-item" @click="showResultDetail(r)">
+        <div v-for="r in results" :key="r.work_id" class="result-item" :class="{ selected: selectedResult?.work_id === r.work_id }" @click="showResultDetail(r)">
           <div class="result-header">
             <span class="result-title">{{ r.title }}</span>
             <span class="result-author">{{ r.author }}</span>
@@ -41,6 +41,24 @@
           </div>
         </div>
       </div>
+
+      <transition name="slide-up">
+        <div v-if="selectedWork" class="result-detail">
+          <div class="result-detail-header">
+            <div>
+              <h3 class="result-detail-title">{{ selectedWork.title }}</h3>
+              <p class="result-detail-meta">{{ selectedWork.author }} · {{ selectedWork.dynasty }}</p>
+            </div>
+            <button class="result-detail-close" @click="selectedResult = null">×</button>
+          </div>
+          <pre class="result-detail-text">{{ selectedWork.text }}</pre>
+          <div class="result-tags" v-if="selectedWork.place_mentions.length || selectedWork.imagery.length || selectedWork.themes.length">
+            <span v-for="p in selectedWork.place_mentions" :key="p" class="tag place-tag">{{ p }}</span>
+            <span v-for="t in selectedWork.themes" :key="t" class="tag theme-tag">{{ t }}</span>
+            <span v-for="i in selectedWork.imagery" :key="i" class="tag imagery-tag">{{ i }}</span>
+          </div>
+        </div>
+      </transition>
     </div>
 
     <div v-else-if="searched && results.length === 0" class="no-results">
@@ -62,13 +80,20 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { loadSearchIndex, type SearchItem } from '../utils/data'
+import { loadSearchIndex, loadWorks, type SearchItem } from '../utils/data'
 
 const query = ref('')
 const searched = ref(false)
 const searchIndex = ref<SearchItem[]>([])
+const worksMap = ref<Record<string, any>>({})
+const selectedResult = ref<SearchItem | null>(null)
 
 const results = ref<SearchItem[]>([])
+
+const selectedWork = computed(() => {
+  if (!selectedResult.value) return null
+  return worksMap.value[selectedResult.value.work_id] || null
+})
 
 const quickQueries = ['烟花三月下扬州', '庐山', '长安', '黄河', '洞庭湖', '黄鹤楼', '江南', '玉门关']
 
@@ -108,12 +133,19 @@ function highlightText(text: string, q: string) {
 }
 
 function showResultDetail(r: SearchItem) {
-  // 可以在这里展示更详细的信息
+  selectedResult.value = r
 }
 
 onMounted(async () => {
   try {
-    searchIndex.value = await loadSearchIndex()
+    const [index, works] = await Promise.all([
+      loadSearchIndex(),
+      loadWorks()
+    ])
+    searchIndex.value = index
+    for (const w of works) {
+      worksMap.value[w.work_id] = w
+    }
   } catch(e) {
     console.error('Failed to load search index:', e)
   }
@@ -233,6 +265,56 @@ onMounted(async () => {
 .result-item:hover {
   border-color: var(--color-accent);
   box-shadow: var(--shadow-sm);
+}
+
+.result-item.selected {
+  border-color: var(--color-accent);
+  background: rgba(139, 58, 58, 0.04);
+}
+
+.result-detail {
+  margin-top: 1rem;
+  padding: 1.2rem 1.4rem;
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.result-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.result-detail-title {
+  font-size: 1.1rem;
+  color: var(--color-ink);
+}
+
+.result-detail-meta {
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.result-detail-close {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--color-ink-muted);
+  padding: 0 0.2rem;
+}
+
+.result-detail-close:hover {
+  color: var(--color-ink);
+}
+
+.result-detail-text {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  line-height: 1.9;
+  color: var(--color-ink);
+  white-space: pre-wrap;
+  margin-bottom: 0.8rem;
 }
 
 .result-header {

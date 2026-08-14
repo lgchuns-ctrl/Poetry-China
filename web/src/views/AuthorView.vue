@@ -69,6 +69,28 @@
         </div>
       </div>
 
+      <transition name="slide-up">
+        <div v-if="selectedPlaceDetail" class="place-detail-card">
+          <div class="place-detail-header">
+            <div>
+              <h4 class="place-detail-title">{{ selectedPlaceDetail.name }}</h4>
+              <p class="place-detail-meta">
+                <span class="place-card-type" :class="'type-' + selectedPlaceDetail.type">{{ typeLabel(selectedPlaceDetail.type) }}</span>
+                <span v-if="selectedPlaceInfo?.modern_province">今{{ selectedPlaceInfo.modern_province }}{{ selectedPlaceInfo.modern_name ? ' · ' + selectedPlaceInfo.modern_name : '' }}</span>
+                <span>{{ selectedPlaceDetail.count }}次书写</span>
+              </p>
+            </div>
+            <button class="place-detail-close" @click="selectedPlaceDetail = null">×</button>
+          </div>
+          <div class="place-detail-poems" v-if="selectedPlacePoems.length">
+            <div v-for="p in selectedPlacePoems" :key="p.work_id" class="place-detail-poem">
+              <p class="place-detail-poem-title">{{ p.title }}</p>
+              <p class="place-detail-poem-text">{{ p.displayText }}</p>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- 代表作品 -->
       <div class="author-poems" v-if="authorPoems.length">
         <h4 class="poems-title">代表作品</h4>
@@ -103,6 +125,7 @@ const placeSummary = ref<Record<string, any>>({})
 const analysisData = ref<any>({})
 
 const selectedAuthor = ref('')
+const selectedPlaceDetail = ref<any>(null)
 const authorMapRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 
@@ -188,6 +211,24 @@ const authorPoems = computed(() => {
     .slice(0, 10)
     .map(w => ({
       ...w,
+      displayText: w.text.split('\n').slice(0, 4).join('\n')
+    }))
+})
+
+const selectedPlaceInfo = computed(() => {
+  if (!selectedPlaceDetail.value) return null
+  const summary = placeSummary.value[selectedPlaceDetail.value.name]
+  return summary || null
+})
+
+const selectedPlacePoems = computed(() => {
+  if (!selectedPlaceDetail.value) return []
+  return authorWorks.value
+    .filter(w => w.place_mentions.includes(selectedPlaceDetail.value.name))
+    .slice(0, 3)
+    .map(w => ({
+      work_id: w.work_id,
+      title: w.title,
       displayText: w.text.split('\n').slice(0, 4).join('\n')
     }))
 })
@@ -326,7 +367,10 @@ function renderAuthorMap() {
 }
 
 function showPlaceDetail(p: any) {
-  // 可以在这里触发地图上的高亮或弹窗
+  selectedPlaceDetail.value = p
+  if (chart) {
+    chart.dispatchAction({ type: 'highlight', seriesIndex: 0, name: p.name })
+  }
 }
 
 let resizeHandler: () => void
@@ -599,6 +643,72 @@ watch(selectedAuthor, () => {
 .place-card-count {
   font-size: 0.72rem;
   color: var(--color-ink-muted);
+}
+
+.place-detail-card {
+  margin-bottom: 2rem;
+  padding: 1.2rem 1.4rem;
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.place-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.place-detail-title {
+  font-size: 1.1rem;
+  color: var(--color-ink);
+}
+
+.place-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.25rem;
+}
+
+.place-detail-close {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--color-ink-muted);
+  padding: 0 0.2rem;
+}
+
+.place-detail-close:hover {
+  color: var(--color-ink);
+}
+
+.place-detail-poems {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.place-detail-poem {
+  padding: 0.6rem 0.8rem;
+  background: var(--color-card);
+  border-radius: var(--radius);
+}
+
+.place-detail-poem-title {
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  margin-bottom: 0.2rem;
+}
+
+.place-detail-poem-text {
+  font-size: 0.82rem;
+  color: var(--color-ink);
+  line-height: 1.8;
+  white-space: pre-wrap;
 }
 
 /* 作品 */
