@@ -729,7 +729,7 @@ def export_json(works, authors, places, place_mentions, analysis, conclusions, n
     os.makedirs(web_data, exist_ok=True)
     for name in ['metadata', 'authors', 'works', 'places', 'place_mentions',
                  'place_summary', 'author_place_matrix', 'dynasty_place_summary',
-                 'imagery_summary', 'themes', 'search_index', 'conclusions', 'methodology']:
+                 'imagery_summary', 'themes', 'search_index', 'conclusions', 'methodology', 'analysis']:
         with open(os.path.join(PROCESSED_DIR, f'{name}.json'), 'r', encoding='utf-8') as f:
             data = json.load(f)
         with open(os.path.join(web_data, f'{name}.json'), 'w', encoding='utf-8') as f:
