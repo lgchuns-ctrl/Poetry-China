@@ -289,6 +289,11 @@ function getColor(type: string): string {
 }
 
 function renderAuthorMap() {
+  if (!chart && authorMapRef.value) {
+    chart = echarts.init(authorMapRef.value)
+    resizeHandler = () => chart?.resize()
+    window.addEventListener('resize', resizeHandler)
+  }
   if (!chart || !authorMapRef.value) return
   
   const places = authorPlaces.value
@@ -376,12 +381,6 @@ function showPlaceDetail(p: any) {
 let resizeHandler: () => void
 
 onMounted(async () => {
-  if (authorMapRef.value) {
-    chart = echarts.init(authorMapRef.value)
-    resizeHandler = () => chart?.resize()
-    window.addEventListener('resize', resizeHandler)
-  }
-  
   // 加载地图
   try {
     const resp = await fetch(`${import.meta.env.BASE_URL}data/china_map.json`)
