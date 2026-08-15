@@ -1,8 +1,9 @@
 <template>
   <div class="data-method-view">
     <div class="section-header">
+      <span class="method-chapter">附录</span>
       <h2 class="section-title">数据与方法</h2>
-      <p class="section-desc">数据来源、处理流程与技术说明</p>
+      <p class="section-desc">前面叙事所用数据、处理流程与技术方法的完整说明</p>
     </div>
 
     <div class="dm-content" v-if="metadata">
@@ -227,6 +228,17 @@ onMounted(async () => {
 .section-header {
   text-align: center;
   margin-bottom: 1.5rem;
+}
+
+.method-chapter {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
 }
 
 .section-title {

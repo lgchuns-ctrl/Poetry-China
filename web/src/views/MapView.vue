@@ -1,9 +1,11 @@
 <template>
   <div class="map-view">
-    <div class="section-header">
-      <h2 class="section-title">诗词山河地图</h2>
-      <p class="section-desc">每一个节点，都是一句诗停留的地方</p>
-    </div>
+    <StoryHeader
+      chapter="01 · 山河有记忆"
+      title="哪些地方被中国诗词反复书写？"
+      subtitle="有些地方，因为被一代代诗人不断书写，成为中国人的共同文学记忆。"
+      question="诗词最爱写哪里？"
+    />
 
     <!-- 筛选栏 -->
     <div class="filter-bar">
@@ -53,6 +55,28 @@
         <span class="legend-label">{{ lt.label }}</span>
       </div>
     </div>
+
+    <!-- 高频地点 -->
+    <div class="top-places-strip" v-if="topPlacesBySummary.length">
+      <span class="top-places-label">诗词最爱写</span>
+      <button
+        v-for="(p, i) in topPlacesBySummary.slice(0, 8)"
+        :key="p.name"
+        class="top-place-chip"
+        :class="{ 'is-top': i === 0 }"
+        @click="focusPlace(p.name)"
+      >
+        <span class="top-place-rank">{{ i + 1 }}</span>
+        <span>{{ p.name }}</span>
+        <small>{{ p.mention_count }}次</small>
+      </button>
+    </div>
+
+    <Finding
+      title="一座城，如何成为一个时代的文学中心？"
+      :items="chapterFindingItems"
+      note="这是基于现有数据的统计现象，不等同于对历史地理事实的因果判断。"
+    />
 
     <!-- 地点详情 -->
     <transition name="slide-up">
@@ -139,6 +163,57 @@
         </div>
       </div>
     </transition>
+
+    <!-- 第一个典型故事：长安 -->
+    <transition name="slide-up">
+      <CaseStudy
+        v-if="showChangAnStory"
+        kicker="第一个典型故事 · 长安诗境"
+        title="长安：一座被反复书写的城"
+        :lead="changanLead"
+        :stats="changanStats"
+        question="可是这张文学地图并没有一直保持不变。"
+      >
+        <div class="case-grid">
+          <div class="case-column">
+            <h4 class="case-subtitle">代表诗人</h4>
+            <div class="author-chips">
+              <span v-for="a in changanAuthors" :key="a.name" class="author-chip" :class="'dynasty-' + a.dynasty">
+                {{ a.name }} <small>{{ a.count }}首</small>
+              </span>
+            </div>
+
+            <h4 class="case-subtitle">高频意象</h4>
+            <div class="imagery-chips">
+              <span v-for="i in changanImagery" :key="i.name" class="imagery-chip">{{ i.name }} {{ i.count }}</span>
+            </div>
+
+            <h4 class="case-subtitle">高频主题</h4>
+            <div class="theme-bars">
+              <div v-for="t in changanThemes" :key="t.name" class="theme-bar">
+                <span class="theme-name">{{ t.name }}</span>
+                <div class="bar-track"><div class="bar-fill" :style="{ width: t.pct + '%' }"></div></div>
+                <span class="theme-count">{{ t.count }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="case-column">
+            <h4 class="case-subtitle">代表作品</h4>
+            <div class="poem-list">
+              <div v-for="p in changanPoems" :key="p.work_id" class="poem-item">
+                <p class="poem-line">{{ p.text }}</p>
+                <p class="poem-meta">—— {{ p.author }} ·《{{ p.title }}》</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CaseStudy>
+    </transition>
+
+    <div v-if="!showChangAnStory" class="story-hint">
+      点击地图上的「长安」，进入第一个典型故事。
+    </div>
   </div>
 </template>
 
@@ -146,6 +221,9 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { loadPlaceSummary, loadWorks, loadPlaceMentions, loadAnalysis } from '../utils/data'
+import StoryHeader from '../components/StoryHeader.vue'
+import Finding from '../components/Finding.vue'
+import CaseStudy from '../components/CaseStudy.vue'
 
 const mapContainerRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
@@ -188,6 +266,97 @@ const topAuthors = computed(() => {
   if (!analysisData.value.top_authors) return []
   return analysisData.value.top_authors.slice(0, 20).map((a: any) => a.author)
 })
+
+const topPlacesBySummary = computed(() => {
+  return Object.entries(placeSummary.value)
+    .map(([name, ps]) => ({ name, ...ps }))
+    .sort((a, b) => b.mention_count - a.mention_count)
+})
+
+const chapterFindingItems = computed(() => {
+  const top = topPlacesBySummary.value.slice(0, 3)
+  if (top.length < 3) return []
+  return [
+    `当前数据集中，被书写最多的是「${top[0].name}」，共 ${top[0].mention_count} 次；其次是「${top[1].name}」 ${top[1].mention_count} 次、「${top[2].name}」 ${top[2].mention_count} 次。`,
+    '文学地点的分布高度不均匀：少数城市、山脉与河流反复出现，另一些地方则几乎不被书写。',
+    '这说明诗词中的“山河”不是平均分配的地理知识，而是被文学传统不断选择和强化的记忆。'
+  ]
+})
+
+const changanSummary = computed(() => placeSummary.value['长安'] || null)
+const showChangAnStory = computed(() => selectedPlace.value?.place_name === '长安' && Boolean(changanSummary.value))
+
+const changanAuthors = computed(() => {
+  if (!changanSummary.value) return []
+  const mentions = allMentions.value.filter(m => m.place_name_normalized === '长安')
+  const count: Record<string, { name: string; count: number; dynasty: string }> = {}
+  for (const m of mentions) {
+    if (!count[m.author_name]) count[m.author_name] = { name: m.author_name, count: 0, dynasty: m.dynasty }
+    count[m.author_name].count++
+  }
+  return Object.values(count).sort((a, b) => b.count - a.count).slice(0, 8)
+})
+
+const changanImagery = computed(() => {
+  const data = analysisData.value.place_imagery?.['长安'] || {}
+  return Object.entries(data as Record<string, number>)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, count]) => ({ name, count }))
+})
+
+const changanThemes = computed(() => {
+  const data = analysisData.value.place_theme?.['长安'] || {}
+  const entries = Object.entries(data as Record<string, number>).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const total = entries.reduce((sum, [, count]) => sum + count, 0)
+  return entries.map(([name, count]) => ({
+    name,
+    count,
+    pct: total > 0 ? Math.round((count / total) * 100) : 0
+  }))
+})
+
+const changanPoems = computed(() => {
+  if (!changanSummary.value) return []
+  const ids = new Set(changanSummary.value.work_ids || [])
+  const works = allWorks.value.filter(w => ids.has(w.work_id))
+  const preferred = ['李白', '杜甫', '王维', '岑参', '白居易']
+  const picked: any[] = []
+  for (const author of preferred) {
+    const w = works.find(work => work.author_name === author)
+    if (w) picked.push(w)
+    if (picked.length >= 3) break
+  }
+  return picked.map(w => ({
+    work_id: w.work_id,
+    author: w.author_name,
+    title: w.title,
+    text: w.text.split('\n')[0]
+  }))
+})
+
+const changanLead = computed(() => {
+  if (!changanSummary.value) return ''
+  const themes = changanThemes.value.map(t => t.name).slice(0, 4).join('、')
+  return `长安不仅是一座城市。在当前数据里，它反复与${themes || '羁旅、思乡、咏史、节令'}等主题一起出现。`
+})
+
+const changanStats = computed(() => {
+  if (!changanSummary.value) return []
+  return [
+    { value: changanSummary.value.mention_count, label: '次书写' },
+    { value: `${changanSummary.value.tang_count} / ${changanSummary.value.song_count}`, label: '唐诗 / 宋词' },
+    { value: changanSummary.value.authors?.length || 0, label: '涉及诗人' },
+    { value: changanSummary.value.work_ids?.length || 0, label: '收录作品' },
+  ]
+})
+
+function focusPlace(name: string) {
+  const place = topPlacesBySummary.value.find(p => p.name === name)
+  if (!place) return
+  selectedPlace.value = { ...place, place_name: place.name }
+  nextTick(() => detailRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+}
 
 const themes = computed(() => themesList)
 const topImagery = computed(() => topImageryList)
@@ -703,6 +872,79 @@ watch(filters, () => renderMap(), { deep: true })
   color: var(--color-ink-muted);
 }
 
+/* 高频地点 */
+.top-places-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 1.4rem 0 0.4rem;
+}
+
+.top-places-label {
+  margin-right: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.1em;
+}
+
+.top-place-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-light);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.top-place-chip:hover,
+.top-place-chip.is-top {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.top-place-rank {
+  font-size: 0.68rem;
+  color: var(--color-ink-muted);
+}
+
+.top-place-chip small {
+  font-size: 0.7rem;
+  color: var(--color-ink-muted);
+}
+
+/* 长安故事 */
+.case-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.2rem;
+}
+
+.case-subtitle {
+  font-size: 0.88rem;
+  color: var(--color-ink);
+  margin: 1rem 0 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--color-accent);
+}
+
+.case-subtitle:first-child {
+  margin-top: 0;
+}
+
+.story-hint {
+  margin: 1.4rem 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.04em;
+}
+
 /* 地点详情 */
 .place-detail {
   margin-top: 1.5rem;
@@ -919,5 +1161,6 @@ watch(filters, () => renderMap(), { deep: true })
   .filter-bar { gap: 0.5rem; padding: 0.6rem; }
   .detail-stats { gap: 1rem; }
   .d-num { font-size: 1.2rem; }
+  .case-grid { grid-template-columns: 1fr; }
 }
 </style>

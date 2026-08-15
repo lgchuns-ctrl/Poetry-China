@@ -1,9 +1,11 @@
 <template>
   <div class="search-view">
-    <div class="section-header">
-      <h2 class="section-title">一句诗，落在何处？</h2>
-      <p class="section-desc">输入诗句或地名，在诗词山河中寻找</p>
-    </div>
+    <StoryHeader
+      chapter="05 · 一句诗"
+      title="一句诗，落在何处？"
+      subtitle="最后，请你自己验证：诗与山河之间，确实存在连接。"
+      question="输入一句诗、一个地名或一位诗人，把它重新放回地图。"
+    />
 
     <!-- 搜索框 -->
     <div class="search-box">
@@ -21,6 +23,17 @@
     <div class="quick-search">
       <span class="quick-label">试试搜索：</span>
       <button v-for="q in quickQueries" :key="q" class="quick-btn" @click="quickSearch(q)">{{ q }}</button>
+    </div>
+
+    <div v-if="detectedPlace" class="locate-card">
+      <div class="locate-marker">定位</div>
+      <div>
+        <h3 class="locate-title">{{ detectedPlace.place_name }}</h3>
+        <p class="locate-meta">
+          今{{ detectedPlace.modern_province }} · {{ detectedPlace.modern_name || detectedPlace.place_name }}
+          <span v-if="detectedPlace.place_type" class="locate-type">{{ typeLabel(detectedPlace.place_type) }}</span>
+        </p>
+      </div>
     </div>
 
     <!-- 搜索结果 -->
@@ -80,13 +93,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { loadSearchIndex, loadWorks, type SearchItem } from '../utils/data'
+import { loadSearchIndex, loadWorks, loadPlaces, type SearchItem, type Place } from '../utils/data'
+import StoryHeader from '../components/StoryHeader.vue'
 
 const query = ref('')
 const searched = ref(false)
 const searchIndex = ref<SearchItem[]>([])
+const places = ref<Place[]>([])
 const worksMap = ref<Record<string, any>>({})
 const selectedResult = ref<SearchItem | null>(null)
+const detectedPlace = ref<Place | null>(null)
 
 const results = ref<SearchItem[]>([])
 
@@ -110,8 +126,20 @@ function onSearch() {
   if (!q) {
     results.value = []
     searched.value = false
+    detectedPlace.value = null
     return
   }
+
+  const place = places.value.find(p =>
+    p.place_name === q ||
+    p.place_name_normalized === q ||
+    p.historical_name === q ||
+    (p.aliases || []).includes(q) ||
+    p.place_name.includes(q) ||
+    q.includes(p.place_name) ||
+    (p.aliases || []).some(a => a.includes(q) || q.includes(a))
+  )
+  detectedPlace.value = place || null
   
   results.value = searchIndex.value.filter(item => {
     return item.text.includes(q) || 
@@ -119,6 +147,14 @@ function onSearch() {
            item.author.includes(q) ||
            item.places.some(p => p.includes(q) || q.includes(p))
   }).slice(0, 50)
+}
+
+function typeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    city: '城市', mountain: '山岳', river: '河流', lake: '湖泊',
+    pass: '关隘', building: '古迹', historic_region: '地域', other: '其他'
+  }
+  return labels[type] || ''
 }
 
 function quickSearch(q: string) {
@@ -138,11 +174,13 @@ function showResultDetail(r: SearchItem) {
 
 onMounted(async () => {
   try {
-    const [index, works] = await Promise.all([
+    const [index, works, placeData] = await Promise.all([
       loadSearchIndex(),
-      loadWorks()
+      loadWorks(),
+      loadPlaces()
     ])
     searchIndex.value = index
+    places.value = placeData
     for (const w of works) {
       worksMap.value[w.work_id] = w
     }
@@ -238,6 +276,52 @@ onMounted(async () => {
 .quick-btn:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+}
+
+/* 地点定位 */
+.locate-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.8rem 0 1.2rem;
+  padding: 1rem 1.2rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.locate-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #fff;
+  background: var(--color-accent);
+  border-radius: 50%;
+}
+
+.locate-title {
+  font-size: 1.1rem;
+  color: var(--color-ink);
+}
+
+.locate-meta {
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.1rem;
+}
+
+.locate-type {
+  margin-left: 0.5rem;
+  padding: 1px 7px;
+  font-size: 0.7rem;
+  color: #fff;
+  background: var(--color-accent);
+  border-radius: 9px;
 }
 
 /* 结果 */

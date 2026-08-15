@@ -1,9 +1,11 @@
 <template>
   <div class="author-view">
-    <div class="section-header">
-      <h2 class="section-title">诗人行迹</h2>
-      <p class="section-desc">选择一位诗人，看见他的诗中中国</p>
-    </div>
+    <StoryHeader
+      chapter="03 · 诗人的山河"
+      title="李白、杜甫、苏轼看到的是同一个中国吗？"
+      subtitle="同一片山河，在不同诗人笔下，会变成不同的文学地图。"
+      question="这里展示的是诗人作品里提到的地点（诗中山河），不是经过考证的真实人生行迹。"
+    />
 
     <!-- 诗人选择 -->
     <div class="author-selector">
@@ -15,6 +17,11 @@
           <span class="author-count">{{ a.workCount }}首</span>
         </button>
       </div>
+    </div>
+
+    <div v-if="selectedAuthor" class="data-note">
+      <strong>诗中山河 ≠ 人生行迹。</strong>
+      本地图统计的是“作品提及地点”：诗中出现某地，不等于诗人真实到过该地。
     </div>
 
     <div v-show="selectedAuthor" class="author-content">
@@ -31,6 +38,36 @@
 
       <!-- 诗人地图 -->
       <div class="author-map-container" ref="authorMapRef"></div>
+
+      <!-- 诗人对照 -->
+      <div class="poet-compare">
+        <div class="poet-compare-head">
+          <h4 class="places-title">把两张“诗中中国”放在一起看</h4>
+          <button class="compare-toggle" @click="compareMode = !compareMode">
+            {{ compareMode ? '收起对照' : '开启对照' }}
+          </button>
+        </div>
+        <transition name="slide-up">
+          <div v-if="compareMode" class="compare-panel">
+            <select v-model="compareAuthor" class="filter-select">
+              <option value="">选择一位对照诗人</option>
+              <option v-for="a in comparableAuthors" :key="a.name" :value="a.name">{{ a.name }}</option>
+            </select>
+            <div v-if="compareAuthor" class="compare-cols">
+              <div class="compare-col">
+                <h5>{{ selectedAuthor }}的诗中山河</h5>
+                <p><strong>{{ authorPlaceCount }}</strong> 个地点 · <strong>{{ authorWorkCount }}</strong> 首作品</p>
+                <p class="compare-top">高频：{{ authorPlaces.slice(0, 3).map(p => p.name).join('、') }}</p>
+              </div>
+              <div class="compare-col">
+                <h5>{{ compareAuthor }}的诗中山河</h5>
+                <p><strong>{{ comparePlaceCount }}</strong> 个地点 · <strong>{{ compareWorkCount }}</strong> 首作品</p>
+                <p class="compare-top">高频：{{ comparePlaces.slice(0, 3).map(p => p.name).join('、') }}</p>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
 
       <!-- 统计数据 -->
       <div class="author-stats">
@@ -54,7 +91,7 @@
 
       <!-- 地点列表 -->
       <div class="author-places">
-        <h4 class="places-title">诗中山河</h4>
+        <h4 class="places-title">{{ selectedAuthor }}的诗中山河</h4>
         <div class="places-grid">
           <div v-for="p in authorPlaces" :key="p.name" class="place-card" @click="showPlaceDetail(p)">
             <div class="place-card-header">
@@ -91,6 +128,22 @@
         </div>
       </transition>
 
+      <CaseStudy
+        v-if="selectedAuthor === '杜甫'"
+        kicker="第二个典型故事 · 杜甫的山河"
+        title="一个漂泊者的文学地图"
+        :lead="dufuLead"
+        :stats="dufuStats"
+        question="一个人的生命经历，会怎样改变他笔下的地理？"
+      >
+        <p class="case-note">这里统计的是杜甫作品中的地点提及，不是对他真实行迹的复原。</p>
+        <div class="author-chips">
+          <span v-for="p in authorPlaces.slice(0, 12)" :key="p.name" class="author-chip">
+            {{ p.name }} <small>{{ p.count }}次</small>
+          </span>
+        </div>
+      </CaseStudy>
+
       <!-- 代表作品 -->
       <div class="author-poems" v-if="authorPoems.length">
         <h4 class="poems-title">代表作品</h4>
@@ -117,6 +170,8 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { loadAuthors, loadWorks, loadPlaceMentions, loadPlaceSummary, loadAnalysis, type Author } from '../utils/data'
+import StoryHeader from '../components/StoryHeader.vue'
+import CaseStudy from '../components/CaseStudy.vue'
 
 const authors = ref<Author[]>([])
 const allWorks = ref<any[]>([])
@@ -126,6 +181,8 @@ const analysisData = ref<any>({})
 
 const selectedAuthor = ref('')
 const selectedPlaceDetail = ref<any>(null)
+const compareMode = ref(false)
+const compareAuthor = ref('')
 const authorMapRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 
@@ -176,6 +233,10 @@ const currentAuthorData = computed(() => {
   return authors.value.find(a => a.author_name === selectedAuthor.value)
 })
 
+const comparableAuthors = computed(() => {
+  return availableAuthors.value.filter(a => a.name !== selectedAuthor.value)
+})
+
 const authorWorks = computed(() => {
   return allWorks.value.filter(w => w.author_name === selectedAuthor.value)
 })
@@ -189,6 +250,24 @@ const authorMentions = computed(() => {
 const authorPlaceCount = computed(() => {
   const places = new Set(authorMentions.value.map(m => m.place_name_normalized))
   return places.size
+})
+
+const compareMentions = computed(() => {
+  return allMentions.value.filter(m => m.author_name === compareAuthor.value)
+})
+
+const comparePlaceCount = computed(() => new Set(compareMentions.value.map(m => m.place_name_normalized)).size)
+
+const compareWorkCount = computed(() => allWorks.value.filter(w => w.author_name === compareAuthor.value).length)
+
+const comparePlaces = computed(() => {
+  const count: Record<string, number> = {}
+  for (const m of compareMentions.value) {
+    count[m.place_name_normalized] = (count[m.place_name_normalized] || 0) + 1
+  }
+  return Object.entries(count)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, c]) => ({ name, count: c }))
 })
 
 const authorPlaces = computed(() => {
@@ -255,8 +334,26 @@ const authorTopTheme = computed(() => {
   return sorted[0]?.[0] || '—'
 })
 
+const dufuLead = computed(() => {
+  const places = analysisData.value.author_diversity?.['杜甫']?.unique_places
+  const top = authorPlaces.value.slice(0, 3).map(p => p.name).join('、')
+  return places
+    ? `在当前数据中，杜甫的作品涉及 ${places} 个不同地点；其中，${top || '巫峡、长安、中原'} 是他笔下最频繁出现的文学空间。`
+    : '杜甫的作品涉及大量不同地点，他的文学地图始终在流动。'
+})
+
+const dufuStats = computed(() => [
+  { value: analysisData.value.author_diversity?.['杜甫']?.unique_places ?? authorPlaceCount.value, label: '涉及地点' },
+  { value: analysisData.value.author_diversity?.['杜甫']?.total_mentions ?? authorMentions.value.length, label: '地名提及' },
+  { value: authorWorkCount.value, label: '收录作品' },
+  { value: authorTopTheme.value, label: '高频主题' },
+])
+
 function selectAuthor(name: string) {
   selectedAuthor.value = name
+  selectedPlaceDetail.value = null
+  compareAuthor.value = ''
+  compareMode.value = false
   nextTick(() => {
     renderAuthorMap()
   })
@@ -446,6 +543,21 @@ watch(selectedAuthor, () => {
   color: var(--color-ink-muted);
 }
 
+.data-note {
+  margin: -0.8rem 0 1.5rem;
+  padding: 0.8rem 1rem;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--color-ink-muted);
+  background: rgba(46, 92, 110, 0.06);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+}
+
+.data-note strong {
+  color: var(--color-song);
+}
+
 /* 诗人选择 */
 .author-selector {
   margin-bottom: 1.5rem;
@@ -542,6 +654,85 @@ watch(selectedAuthor, () => {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   margin-bottom: 1.5rem;
+}
+
+/* 诗人对照 */
+.poet-compare {
+  margin-bottom: 2rem;
+  padding: 1.2rem 1.4rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+}
+
+.poet-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.compare-toggle {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.78rem;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.compare-toggle:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.compare-panel {
+  margin-top: 1rem;
+}
+
+.compare-panel .filter-select {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+}
+
+.compare-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.compare-col {
+  padding: 1rem;
+  background: var(--color-bg-alt);
+  border-radius: var(--radius);
+}
+
+.compare-col h5 {
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  margin-bottom: 0.4rem;
+}
+
+.compare-col p {
+  font-size: 0.8rem;
+  color: var(--color-ink-light);
+  line-height: 1.7;
+}
+
+.compare-top {
+  margin-top: 0.4rem;
+  color: var(--color-accent);
+}
+
+.case-note {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
 }
 
 /* 统计 */
@@ -782,6 +973,9 @@ watch(selectedAuthor, () => {
     height: 350px;
   }
   .places-grid {
+    grid-template-columns: 1fr;
+  }
+  .compare-cols {
     grid-template-columns: 1fr;
   }
 }

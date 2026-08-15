@@ -47,9 +47,19 @@
       <AuthorView />
     </section>
 
+    <!-- 山河如何成为情感 -->
+    <section id="emotion" class="section section-emotion">
+      <EmotionView />
+    </section>
+
     <!-- 一句诗在哪里 -->
     <section id="search" class="section section-search">
       <SearchView />
+    </section>
+
+    <!-- 终章 -->
+    <section id="epilogue" class="section section-epilogue">
+      <EpilogueView />
     </section>
 
     <!-- 数据与方法 -->
@@ -72,7 +82,9 @@ import HomeView from './views/HomeView.vue'
 import MapView from './views/MapView.vue'
 import CompareView from './views/CompareView.vue'
 import AuthorView from './views/AuthorView.vue'
+import EmotionView from './views/EmotionView.vue'
 import SearchView from './views/SearchView.vue'
+import EpilogueView from './views/EpilogueView.vue'
 import DataMethodView from './views/DataMethodView.vue'
 
 const isScrolled = ref(false)
@@ -80,11 +92,13 @@ const mobileMenuOpen = ref(false)
 const activeSection = ref('home')
 
 const navItems = [
-  { id: 'home', label: '首页' },
-  { id: 'map', label: '诗词山河' },
-  { id: 'compare', label: '唐宋对照' },
-  { id: 'author', label: '诗人行迹' },
-  { id: 'search', label: '一句诗在哪里' },
+  { id: 'home', label: '序章' },
+  { id: 'map', label: '01 山河有记忆' },
+  { id: 'compare', label: '02 从长安到江南' },
+  { id: 'author', label: '03 诗人的山河' },
+  { id: 'emotion', label: '04 山河与情感' },
+  { id: 'search', label: '05 一句诗' },
+  { id: 'epilogue', label: '终章' },
   { id: 'data', label: '数据与方法' },
 ]
 
@@ -171,13 +185,13 @@ onUnmounted(() => {
 .nav-links {
   display: flex;
   list-style: none;
-  gap: 0.3rem;
+  gap: 0.1rem;
 }
 
 .nav-links a {
   display: block;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.88rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.8rem;
   color: var(--color-ink-light);
   border-radius: var(--radius);
   transition: all 0.2s;
